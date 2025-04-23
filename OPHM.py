@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 import yfinance as yf
 from scipy.stats import norm
 
-# Initialize portfolio list
+# Initialize portfolio list (now this holds the stock data as well)
 portfolio = []
 
 # Helper functions for Greeks and pricing
@@ -110,6 +110,20 @@ with st.sidebar.expander("Sensitivity Analysis Inputs", expanded=True):
     strike_range = st.slider("Strike Price Range (K)", 50, 150, (80, 120), help="The range of strike prices for the options.")
     time_range = st.slider("Maturity Range (T, years)", 0.01, 2.0, (0.1, 1.0), help="The range of time-to-maturity (in years) for the options.")
 
+# Display Portfolio & Option Settings
+with st.expander("Your Portfolio", expanded=True):
+    st.write("### Portfolio Overview")
+    for idx, item in enumerate(portfolio):
+        st.write(f"**{item['stock_symbol']}** - Price: ${item['stock_price']:.2f}")
+        strike = st.number_input(f"Strike Price for {item['stock_symbol']}", value=item['strike'], key=f"strike_{idx}")
+        maturity = st.number_input(f"Maturity for {item['stock_symbol']} (years)", value=item['maturity'], key=f"maturity_{idx}")
+        quantity = st.number_input(f"Quantity for {item['stock_symbol']}", value=item['quantity'], key=f"quantity_{idx}")
+        
+        # Update portfolio with new values
+        portfolio[idx]["strike"] = strike
+        portfolio[idx]["maturity"] = maturity
+        portfolio[idx]["quantity"] = quantity
+
 # Sensitivity Analysis Calculation
 K_vals, T_vals, delta_matrix, gamma_matrix, vega_matrix = sensitivity_analysis(S, r, sigma, option_type, strike_range, time_range)
 
@@ -127,20 +141,8 @@ with st.expander("Greeks Sensitivity Heatmap", expanded=True):
     fig.update_layout(title="Vega Sensitivity Heatmap")
     st.plotly_chart(fig, use_container_width=True)
 
-# Portfolio Inputs
-with st.sidebar.expander("Portfolio Inputs", expanded=True):
-    num_options = st.number_input("Number of Options in Portfolio", min_value=1, max_value=10, value=1, help="Specify how many options you want to include in your portfolio.")
-    options = []  # Initialize the options list again inside the Portfolio Inputs expander
-    
-    for i in range(num_options):
-        with st.sidebar.expander(f"Option {i+1} Details", expanded=True):
-            quantity = st.number_input(f"Quantity of Option {i+1}", value=1, help="Number of contracts for this option.")
-            strike = st.number_input(f"Strike Price of Option {i+1}", value=100.0, help="The strike price at which the option can be exercised.")
-            maturity = st.number_input(f"Maturity of Option {i+1} (Years)", value=1.0, help="The time in years until the option expires.")
-            options.append({"quantity": quantity, "strike": strike, "maturity": maturity})
-
 # Portfolio Risk Calculation
-total_delta, total_gamma, var, cvar, monte_carlo_risk = portfolio_risk_metrics(options, S, r, sigma, option_type)
+total_delta, total_gamma, var, cvar, monte_carlo_risk = portfolio_risk_metrics(portfolio, S, r, sigma, option_type)
 
 # Display Portfolio Risk Metrics
 with st.expander("Portfolio Risk Metrics"):
