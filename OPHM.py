@@ -4,9 +4,6 @@ import plotly.graph_objects as go
 import yfinance as yf
 from scipy.stats import norm
 
-# Initialize portfolio list
-portfolio = []
-
 # Helper functions for Greeks and pricing
 def black_scholes(S, K, T, r, sigma, option_type="call"):
     if T == 0:
@@ -54,6 +51,10 @@ def portfolio_risk_metrics(options, S, r, sigma, option_type="call"):
     
     return total_delta, total_gamma, var, cvar, monte_carlo_risk
 
+# Initialize session state for portfolio
+if "portfolio" not in st.session_state:
+    st.session_state.portfolio = []
+
 # Streamlit UI for Sensitivity Analysis
 st.title("Options Sensitivity Analysis & Portfolio Risk Metrics")
 
@@ -71,8 +72,8 @@ with st.sidebar.expander("Stock Data Inputs", expanded=True):
         
         # Add stock to portfolio functionality
         if st.button("Add to Portfolio"):
-            # Store the selected stock in the portfolio
-            portfolio.append({
+            # Store the selected stock in the session state portfolio
+            st.session_state.portfolio.append({
                 "stock_symbol": stock_symbol,
                 "stock_price": S,
                 "quantity": 1,  # Default quantity for simplicity
@@ -90,16 +91,16 @@ with st.sidebar.expander("Option Inputs", expanded=True):
 # Display Portfolio & Option Settings for Each Stock
 with st.expander("Your Portfolio", expanded=True):
     st.write("### Portfolio Overview")
-    for idx, item in enumerate(portfolio):
+    for idx, item in enumerate(st.session_state.portfolio):
         st.write(f"**{item['stock_symbol']}** - Price: ${item['stock_price']:.2f}")
         strike = st.number_input(f"Strike Price for {item['stock_symbol']}", value=item['strike'], key=f"strike_{idx}")
         maturity = st.number_input(f"Maturity for {item['stock_symbol']} (years)", value=item['maturity'], key=f"maturity_{idx}")
         quantity = st.number_input(f"Quantity for {item['stock_symbol']}", value=item['quantity'], key=f"quantity_{idx}")
         
         # Update portfolio with new values
-        portfolio[idx]["strike"] = strike
-        portfolio[idx]["maturity"] = maturity
-        portfolio[idx]["quantity"] = quantity
+        st.session_state.portfolio[idx]["strike"] = strike
+        st.session_state.portfolio[idx]["maturity"] = maturity
+        st.session_state.portfolio[idx]["quantity"] = quantity
 
 # Portfolio Risk Metrics with Tooltips
 with st.expander("Portfolio Risk Metrics"):
@@ -113,10 +114,24 @@ with st.expander("Portfolio Risk Metrics"):
     - **Monte Carlo Risk**: Simulates portfolio values based on random sampling to estimate the potential risk.
 
     """)
-    total_delta, total_gamma, var, cvar, monte_carlo_risk = portfolio_risk_metrics(portfolio, S, r, sigma, option_type)
+    total_delta, total_gamma, var, cvar, monte_carlo_risk = portfolio_risk_metrics(st.session_state.portfolio, S, r, sigma, option_type)
     
     st.write(f"Portfolio Delta: {total_delta}")
     st.write(f"Portfolio Gamma: {total_gamma}")
     st.write(f"Value-at-Risk (VaR): {var}")
     st.write(f"Conditional VaR (CVaR): {cvar}")
     st.write(f"Monte Carlo Risk: {monte_carlo_risk}")
+    
+    # Visualizing Portfolio Risk Metrics
+    fig = go.Figure(data=[go.Bar(
+        x=["Delta", "Gamma", "VaR", "CVaR", "Monte Carlo Risk"],
+        y=[total_delta, total_gamma, var, cvar, monte_carlo_risk],
+        marker_color='royalblue'
+    )])
+    fig.update_layout(
+        title="Portfolio Risk Metrics",
+        xaxis_title="Risk Metrics",
+        yaxis_title="Value",
+        template="plotly_dark"
+    )
+    st.plotly_chart(fig)
