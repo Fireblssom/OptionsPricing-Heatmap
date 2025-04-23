@@ -1,18 +1,18 @@
 import streamlit as st
 import numpy as np
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 from scipy.stats import norm
 
-# Descriptions for tooltips
+# Tooltip descriptions for greeks
 greek_tooltips = {
-    "Delta": "Measures sensitivity of option price to changes in the underlying asset price.",
-    "Gamma": "Measures rate of change of Delta with respect to the underlying price.",
-    "Theta": "Measures sensitivity of the option price to the passage of time (time decay).",
-    "Vega": "Measures sensitivity to volatility of the underlying asset.",
-    "Rho": "Measures sensitivity to changes in the risk-free interest rate."
+    "Delta": "Sensitivity of option price to changes in underlying asset price.",
+    "Gamma": "Rate of change of Delta with respect to the underlying price.",
+    "Theta": "Sensitivity to the passage of time (time decay).",
+    "Vega": "Sensitivity to changes in implied volatility.",
+    "Rho": "Sensitivity to changes in the risk-free rate."
 }
 
-# Black-Scholes formula
+# Black-Scholes pricing
 def black_scholes(S, K, T, r, sigma, option_type="call"):
     if T == 0:
         return max(S - K, 0) if option_type == "call" else max(K - S, 0)
@@ -23,7 +23,7 @@ def black_scholes(S, K, T, r, sigma, option_type="call"):
     else:
         return K * np.exp(-r * T) * norm.cdf(-d2) - S * norm.cdf(-d1)
 
-# Streamlit app
+# Streamlit UI
 st.title("Options Pricing Heatmap")
 
 S = st.sidebar.number_input("Spot Price (S)", value=100.0)
@@ -37,15 +37,15 @@ output_metric = st.sidebar.selectbox(
     ["Price", "Delta", "Gamma", "Theta", "Vega", "Rho"]
 )
 
-# Tooltip display
 if output_metric in greek_tooltips:
     st.caption(f"**{output_metric}**: {greek_tooltips[output_metric]}")
 
-# Create grid
+# Grid setup
 K_vals = np.linspace(*strike_range, 30)
 T_vals = np.linspace(*time_range, 30)
 Z = np.zeros((len(T_vals), len(K_vals)))
 
+# Compute heatmap values
 for i, T in enumerate(T_vals):
     for j, K in enumerate(K_vals):
         d1 = (np.log(S / K) + (r + 0.5 * sigma**2) * T) / (sigma * np.sqrt(T)) if T > 0 else 0
@@ -66,12 +66,22 @@ for i, T in enumerate(T_vals):
         elif output_metric == "Rho":
             Z[i, j] = K * T * np.exp(-r * T) * norm.cdf(d2) if option_type == "call" else -K * T * np.exp(-r * T) * norm.cdf(-d2)
 
-# Plot
-fig, ax = plt.subplots(figsize=(8, 6))
-c = ax.imshow(Z, extent=[K_vals.min(), K_vals.max(), T_vals.min(), T_vals.max()],
-              aspect='auto', origin='lower', cmap='viridis')
-ax.set_xlabel("Strike Price (K)")
-ax.set_ylabel("Maturity (T, years)")
-ax.set_title(f"{output_metric} Heatmap")
-fig.colorbar(c, ax=ax)
-st.pyplot(fig)
+# Plotly heatmap
+fig = go.Figure(data=go.Heatmap(
+    z=Z,
+    x=np.round(K_vals, 2),
+    y=np.round(T_vals, 2),
+    colorscale="YlGnBu",
+    colorbar=dict(title=output_metric),
+    hovertemplate='K: %{x}<br>T: %{y}<br>' + output_metric + ': %{z:.4f}<extra></extra>'
+))
+
+fig.update_layout(
+    title=f"{output_metric} Heatmap",
+    xaxis_title="Strike Price (K)",
+    yaxis_title="Maturity (T, years)",
+    autosize=True,
+    margin=dict(l=40, r=40, t=60, b=40)
+)
+
+st.plotly_chart(fig, use_container_width=True)
