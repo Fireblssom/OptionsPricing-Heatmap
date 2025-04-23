@@ -72,38 +72,53 @@ def portfolio_risk_metrics(options, S, r, sigma, option_type="call"):
 st.title("Options Sensitivity Analysis & Portfolio Risk Metrics")
 
 # Option Inputs
-S = st.sidebar.number_input("Spot Price (S)", value=100.0)
-r = st.sidebar.number_input("Risk-Free Rate (r)", value=0.01)
-sigma = st.sidebar.number_input("Volatility (σ)", value=0.2)
-option_type = st.sidebar.selectbox("Option Type", ["call", "put"])
-
+with st.sidebar.expander("Option Inputs"):
+    S = st.number_input("Spot Price (S)", value=100.0, help="The current price of the underlying asset (e.g., stock price).")
+    r = st.number_input("Risk-Free Rate (r)", value=0.01, help="The rate of return on a risk-free investment (e.g., government bonds).")
+    sigma = st.number_input("Volatility (σ)", value=0.2, help="The measure of the asset's price fluctuations over time.")
+    option_type = st.selectbox("Option Type", ["call", "put"], help="Select whether the option is a 'call' or a 'put'.")
+    
 # Sensitivity Analysis Inputs
-strike_range = st.sidebar.slider("Strike Price Range (K)", 50, 150, (80, 120))
-time_range = st.sidebar.slider("Maturity Range (T, years)", 0.01, 2.0, (0.1, 1.0))
+with st.sidebar.expander("Sensitivity Analysis Inputs"):
+    strike_range = st.slider("Strike Price Range (K)", 50, 150, (80, 120), help="The range of strike prices for the options.")
+    time_range = st.slider("Maturity Range (T, years)", 0.01, 2.0, (0.1, 1.0), help="The range of time-to-maturity (in years) for the options.")
 
 # Sensitivity Analysis Calculation
 K_vals, T_vals, delta_matrix, gamma_matrix, vega_matrix = sensitivity_analysis(S, r, sigma, option_type, strike_range, time_range)
 
 # Display Sensitivity Heatmaps
-fig = go.Figure(data=go.Heatmap(z=delta_matrix, x=np.round(K_vals, 2), y=np.round(T_vals, 2), colorscale="YlGnBu", colorbar=dict(title="Delta")))
-st.plotly_chart(fig, use_container_width=True)
+with st.expander("Greeks Sensitivity Heatmap"):
+    fig = go.Figure(data=go.Heatmap(z=delta_matrix, x=np.round(K_vals, 2), y=np.round(T_vals, 2), colorscale="YlGnBu", colorbar=dict(title="Delta")))
+    fig.update_layout(title="Delta Sensitivity Heatmap")
+    st.plotly_chart(fig, use_container_width=True)
+
+    fig = go.Figure(data=go.Heatmap(z=gamma_matrix, x=np.round(K_vals, 2), y=np.round(T_vals, 2), colorscale="YlGnBu", colorbar=dict(title="Gamma")))
+    fig.update_layout(title="Gamma Sensitivity Heatmap")
+    st.plotly_chart(fig, use_container_width=True)
+
+    fig = go.Figure(data=go.Heatmap(z=vega_matrix, x=np.round(K_vals, 2), y=np.round(T_vals, 2), colorscale="YlGnBu", colorbar=dict(title="Vega")))
+    fig.update_layout(title="Vega Sensitivity Heatmap")
+    st.plotly_chart(fig, use_container_width=True)
 
 # Portfolio Inputs
-options = []
-num_options = st.sidebar.number_input("Number of Options in Portfolio", min_value=1, max_value=10, value=1)
+with st.sidebar.expander("Portfolio Inputs"):
+    options = []
+    num_options = st.number_input("Number of Options in Portfolio", min_value=1, max_value=10, value=1, help="Specify how many options you want to include in your portfolio.")
 
-for i in range(num_options):
-    st.sidebar.subheader(f"Option {i+1}")
-    quantity = st.sidebar.number_input(f"Quantity of Option {i+1}", value=1)
-    strike = st.sidebar.number_input(f"Strike Price of Option {i+1}", value=100.0)
-    maturity = st.sidebar.number_input(f"Maturity of Option {i+1} (Years)", value=1.0)
-    options.append({"quantity": quantity, "strike": strike, "maturity": maturity})
+    for i in range(num_options):
+        with st.sidebar.expander(f"Option {i+1} Details"):
+            quantity = st.number_input(f"Quantity of Option {i+1}", value=1, help="Number of contracts for this option.")
+            strike = st.number_input(f"Strike Price of Option {i+1}", value=100.0, help="The strike price at which the option can be exercised.")
+            maturity = st.number_input(f"Maturity of Option {i+1} (Years)", value=1.0, help="The time in years until the option expires.")
+            options.append({"quantity": quantity, "strike": strike, "maturity": maturity})
 
 # Portfolio Risk Calculation
 total_delta, total_gamma, var, cvar, monte_carlo_risk = portfolio_risk_metrics(options, S, r, sigma, option_type)
 
-st.write(f"Portfolio Delta: {total_delta}")
-st.write(f"Portfolio Gamma: {total_gamma}")
-st.write(f"Value-at-Risk (VaR): {var}")
-st.write(f"Conditional VaR (CVaR): {cvar}")
-st.write(f"Monte Carlo Risk: {monte_carlo_risk}")
+# Display Portfolio Risk Metrics
+with st.expander("Portfolio Risk Metrics"):
+    st.write(f"Portfolio Delta: {total_delta}")
+    st.write(f"Portfolio Gamma: {total_gamma}")
+    st.write(f"Value-at-Risk (VaR): {var}")
+    st.write(f"Conditional VaR (CVaR): {cvar}")
+    st.write(f"Monte Carlo Risk: {monte_carlo_risk}")
