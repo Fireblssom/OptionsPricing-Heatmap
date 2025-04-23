@@ -3,16 +3,31 @@ import numpy as np
 import plotly.graph_objects as go
 from scipy.stats import norm
 
-# Tooltip descriptions for greeks
+# Humanized descriptions for the Greeks
 greek_tooltips = {
-    "Delta": "Sensitivity of option price to changes in underlying asset price.",
-    "Gamma": "Rate of change of Delta with respect to the underlying price.",
-    "Theta": "Sensitivity to the passage of time (time decay).",
-    "Vega": "Sensitivity to changes in implied volatility.",
-    "Rho": "Sensitivity to changes in the risk-free rate."
+    "Delta": (
+        "Delta tells you how much the price of the option will move for a small change in the price of the underlying asset. "
+        "For calls, it increases as the stock price rises, and for puts, it decreases."
+    ),
+    "Gamma": (
+        "Gamma measures the rate of change of Delta as the underlying asset price changes. "
+        "In simple terms, it's like the acceleration of Delta — how much faster Delta changes as the stock price moves."
+    ),
+    "Theta": (
+        "Theta represents time decay, showing how much an option's price decreases as time passes, holding everything else constant. "
+        "As expiration nears, an option’s value tends to decline, especially for out-of-the-money options."
+    ),
+    "Vega": (
+        "Vega tells you how sensitive the option’s price is to changes in volatility. "
+        "When volatility increases, option prices usually rise, and Vega measures this relationship."
+    ),
+    "Rho": (
+        "Rho shows how much an option's price will change with a change in the risk-free interest rate. "
+        "It's most significant for longer-term options, as small interest rate changes have a bigger effect on their value."
+    )
 }
 
-# Black-Scholes pricing
+# Black-Scholes pricing model
 def black_scholes(S, K, T, r, sigma, option_type="call"):
     if T == 0:
         return max(S - K, 0) if option_type == "call" else max(K - S, 0)
@@ -37,15 +52,16 @@ output_metric = st.sidebar.selectbox(
     ["Price", "Delta", "Gamma", "Theta", "Vega", "Rho"]
 )
 
+# Display selected Greek's description
 if output_metric in greek_tooltips:
     st.caption(f"**{output_metric}**: {greek_tooltips[output_metric]}")
 
-# Grid setup
+# Grid setup for strike prices and maturities
 K_vals = np.linspace(*strike_range, 30)
 T_vals = np.linspace(*time_range, 30)
 Z = np.zeros((len(T_vals), len(K_vals)))
 
-# Compute heatmap values
+# Compute values for the heatmap based on selected Greek
 for i, T in enumerate(T_vals):
     for j, K in enumerate(K_vals):
         d1 = (np.log(S / K) + (r + 0.5 * sigma**2) * T) / (sigma * np.sqrt(T)) if T > 0 else 0
@@ -66,7 +82,7 @@ for i, T in enumerate(T_vals):
         elif output_metric == "Rho":
             Z[i, j] = K * T * np.exp(-r * T) * norm.cdf(d2) if option_type == "call" else -K * T * np.exp(-r * T) * norm.cdf(-d2)
 
-# Plotly heatmap
+# Plot the heatmap using Plotly
 fig = go.Figure(data=go.Heatmap(
     z=Z,
     x=np.round(K_vals, 2),
@@ -76,6 +92,7 @@ fig = go.Figure(data=go.Heatmap(
     hovertemplate='K: %{x}<br>T: %{y}<br>' + output_metric + ': %{z:.4f}<extra></extra>'
 ))
 
+# Layout adjustments for the Plotly chart
 fig.update_layout(
     title=f"{output_metric} Heatmap",
     xaxis_title="Strike Price (K)",
@@ -84,4 +101,5 @@ fig.update_layout(
     margin=dict(l=40, r=40, t=60, b=40)
 )
 
+# Display the chart in Streamlit
 st.plotly_chart(fig, use_container_width=True)
