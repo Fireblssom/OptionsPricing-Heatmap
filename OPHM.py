@@ -51,6 +51,15 @@ def portfolio_risk_metrics(options, S, r, sigma, option_type="call"):
     
     return total_delta, total_gamma, var, cvar, monte_carlo_risk
 
+# Function to determine color based on risk level
+def get_risk_color(risk_value, low_threshold, high_threshold):
+    if risk_value < low_threshold:
+        return 'blue'  # Low risk (Blue)
+    elif risk_value < high_threshold:
+        return 'yellow'  # Medium risk (Yellow)
+    else:
+        return 'red'  # High risk (Red)
+
 # Initialize session state for portfolio
 if "portfolio" not in st.session_state:
     st.session_state.portfolio = []
@@ -122,11 +131,18 @@ with st.expander("Portfolio Risk Metrics"):
     st.write(f"Conditional VaR (CVaR): {cvar}")
     st.write(f"Monte Carlo Risk: {monte_carlo_risk}")
     
-    # Visualizing Portfolio Risk Metrics
+    # Get colors based on risk levels
+    delta_color = get_risk_color(total_delta, -0.5, 0.5)
+    gamma_color = get_risk_color(total_gamma, 0, 0.1)
+    var_color = get_risk_color(var, 0, 50000)
+    cvar_color = get_risk_color(cvar, 0, 50000)
+    monte_carlo_risk_color = get_risk_color(monte_carlo_risk, 0, 50000)
+    
+    # Visualizing Portfolio Risk Metrics with dynamic colors
     fig = go.Figure(data=[go.Bar(
         x=["Delta", "Gamma", "VaR", "CVaR", "Monte Carlo Risk"],
         y=[total_delta, total_gamma, var, cvar, monte_carlo_risk],
-        marker_color='royalblue'
+        marker_color=[delta_color, gamma_color, var_color, cvar_color, monte_carlo_risk_color]
     )])
     fig.update_layout(
         title="Portfolio Risk Metrics",
