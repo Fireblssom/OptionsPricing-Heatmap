@@ -1,5 +1,5 @@
-streamlit>=1.28
-plotly>=5.5
-numpy>=1.24
-scipy>=1.10
-
+streamlit
+plotly
+numpy
+scipy
+yfinance
