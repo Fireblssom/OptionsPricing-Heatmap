@@ -1,6 +1,7 @@
 import streamlit as st
 import numpy as np
 import plotly.graph_objects as go
+import yfinance as yf
 from scipy.stats import norm
 
 # Helper functions for Greeks and pricing
@@ -71,15 +72,26 @@ def portfolio_risk_metrics(options, S, r, sigma, option_type="call"):
 # Streamlit UI for Sensitivity Analysis
 st.title("Options Sensitivity Analysis & Portfolio Risk Metrics")
 
+# Stock Selection
+with st.sidebar.expander("Stock Data Inputs", expanded=True):
+    stock_symbol = st.text_input("Enter Stock Symbol (e.g., AAPL, TSLA)", value="AAPL", help="Enter the ticker symbol of the stock you want to analyze.")
+    stock_data = yf.Ticker(stock_symbol)
+    stock_info = stock_data.history(period="1d")
+    
+    if stock_info.empty:
+        st.error("Invalid stock symbol or data not available.")
+    else:
+        S = stock_info["Close"].iloc[-1]
+        st.write(f"Real-Time Stock Price for {stock_symbol}: ${S:.2f}")
+
 # Option Inputs
-with st.sidebar.expander("Option Inputs"):
-    S = st.number_input("Spot Price (S)", value=100.0, help="The current price of the underlying asset (e.g., stock price).")
+with st.sidebar.expander("Option Inputs", expanded=True):
     r = st.number_input("Risk-Free Rate (r)", value=0.01, help="The rate of return on a risk-free investment (e.g., government bonds).")
     sigma = st.number_input("Volatility (σ)", value=0.2, help="The measure of the asset's price fluctuations over time.")
     option_type = st.selectbox("Option Type", ["call", "put"], help="Select whether the option is a 'call' or a 'put'.")
-    
+
 # Sensitivity Analysis Inputs
-with st.sidebar.expander("Sensitivity Analysis Inputs"):
+with st.sidebar.expander("Sensitivity Analysis Inputs", expanded=True):
     strike_range = st.slider("Strike Price Range (K)", 50, 150, (80, 120), help="The range of strike prices for the options.")
     time_range = st.slider("Maturity Range (T, years)", 0.01, 2.0, (0.1, 1.0), help="The range of time-to-maturity (in years) for the options.")
 
@@ -101,12 +113,12 @@ with st.expander("Greeks Sensitivity Heatmap"):
     st.plotly_chart(fig, use_container_width=True)
 
 # Portfolio Inputs
-with st.sidebar.expander("Portfolio Inputs"):
+with st.sidebar.expander("Portfolio Inputs", expanded=True):
     options = []
     num_options = st.number_input("Number of Options in Portfolio", min_value=1, max_value=10, value=1, help="Specify how many options you want to include in your portfolio.")
 
     for i in range(num_options):
-        with st.sidebar.expander(f"Option {i+1} Details"):
+        with st.sidebar.expander(f"Option {i+1} Details", expanded=True):
             quantity = st.number_input(f"Quantity of Option {i+1}", value=1, help="Number of contracts for this option.")
             strike = st.number_input(f"Strike Price of Option {i+1}", value=100.0, help="The strike price at which the option can be exercised.")
             maturity = st.number_input(f"Maturity of Option {i+1} (Years)", value=1.0, help="The time in years until the option expires.")
