@@ -107,5 +107,3 @@ st.write(f"Portfolio Gamma: {total_gamma}")
 st.write(f"Value-at-Risk (VaR): {var}")
 st.write(f"Conditional VaR (CVaR): {cvar}")
 st.write(f"Monte Carlo Risk: {monte_carlo_risk}")
-
-st.plotly_chart(fig, use_container_width=True)
