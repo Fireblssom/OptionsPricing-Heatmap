@@ -121,7 +121,6 @@ with st.expander("Portfolio Risk Metrics"):
     - **VaR (Value-at-Risk)**: Estimates the potential loss in portfolio value under normal market conditions at a given confidence level.
     - **CVaR (Conditional Value-at-Risk)**: Measures the expected loss assuming that the VaR threshold has been breached.
     - **Monte Carlo Risk**: Simulates portfolio values based on random sampling to estimate the potential risk.
-
     """)
     total_delta, total_gamma, var, cvar, monte_carlo_risk = portfolio_risk_metrics(st.session_state.portfolio, S, r, sigma, option_type)
     
@@ -148,6 +147,12 @@ with st.expander("Portfolio Risk Metrics"):
         title="Portfolio Risk Metrics",
         xaxis_title="Risk Metrics",
         yaxis_title="Value",
-        template="plotly_dark"
+        template="plotly_dark",
+        coloraxis_colorbar=dict(
+            title="Risk Level",
+            tickvals=[0, 1, 2],
+            ticktext=["Low", "Medium", "High"],
+            tickmode="array"
+        )
     )
     st.plotly_chart(fig)
