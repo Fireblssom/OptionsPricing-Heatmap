@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 import yfinance as yf
 from scipy.stats import norm
 
-# Initialize portfolio list (now this holds the stock data as well)
+# Initialize portfolio list
 portfolio = []
 
 # Helper functions for Greeks and pricing
@@ -38,25 +38,7 @@ def compute_greeks(S, K, T, r, sigma, option_type="call"):
     
     return greeks
 
-# Sensitivity Analysis: Calculate how Greeks change with strike and maturity
-def sensitivity_analysis(S, r, sigma, option_type, strike_range, time_range):
-    K_vals = np.linspace(*strike_range, 30)
-    T_vals = np.linspace(*time_range, 30)
-    
-    delta_matrix = np.zeros((len(T_vals), len(K_vals)))
-    gamma_matrix = np.zeros((len(T_vals), len(K_vals)))
-    vega_matrix = np.zeros((len(T_vals), len(K_vals)))
-    
-    for i, T in enumerate(T_vals):
-        for j, K in enumerate(K_vals):
-            greeks = compute_greeks(S, K, T, r, sigma, option_type)
-            delta_matrix[i, j] = greeks["Delta"]
-            gamma_matrix[i, j] = greeks["Gamma"]
-            vega_matrix[i, j] = greeks["Vega"]
-    
-    return K_vals, T_vals, delta_matrix, gamma_matrix, vega_matrix
-
-# Portfolio Risk Metrics: VaR, CVaR, and Monte Carlo Simulation
+# Portfolio Risk Metrics
 def portfolio_risk_metrics(options, S, r, sigma, option_type="call"):
     total_delta = sum([option["quantity"] * compute_greeks(S, option["strike"], option["maturity"], r, sigma, option_type)["Delta"] for option in options])
     total_gamma = sum([option["quantity"] * compute_greeks(S, option["strike"], option["maturity"], r, sigma, option_type)["Gamma"] for option in options])
@@ -75,7 +57,7 @@ def portfolio_risk_metrics(options, S, r, sigma, option_type="call"):
 # Streamlit UI for Sensitivity Analysis
 st.title("Options Sensitivity Analysis & Portfolio Risk Metrics")
 
-# Stock Selection
+# Stock Selection and Add to Portfolio functionality
 with st.sidebar.expander("Stock Data Inputs", expanded=True):
     stock_symbol = st.text_input("Enter Stock Symbol (e.g., AAPL, TSLA)", value="AAPL", help="Enter the ticker symbol of the stock you want to analyze.")
     stock_data = yf.Ticker(stock_symbol)
@@ -105,12 +87,7 @@ with st.sidebar.expander("Option Inputs", expanded=True):
     sigma = st.number_input("Volatility (σ)", value=0.2, help="The measure of the asset's price fluctuations over time.")
     option_type = st.selectbox("Option Type", ["call", "put"], help="Select whether the option is a 'call' or a 'put'.")
 
-# Sensitivity Analysis Inputs
-with st.sidebar.expander("Sensitivity Analysis Inputs", expanded=True):
-    strike_range = st.slider("Strike Price Range (K)", 50, 150, (80, 120), help="The range of strike prices for the options.")
-    time_range = st.slider("Maturity Range (T, years)", 0.01, 2.0, (0.1, 1.0), help="The range of time-to-maturity (in years) for the options.")
-
-# Display Portfolio & Option Settings
+# Display Portfolio & Option Settings for Each Stock
 with st.expander("Your Portfolio", expanded=True):
     st.write("### Portfolio Overview")
     for idx, item in enumerate(portfolio):
@@ -124,28 +101,20 @@ with st.expander("Your Portfolio", expanded=True):
         portfolio[idx]["maturity"] = maturity
         portfolio[idx]["quantity"] = quantity
 
-# Sensitivity Analysis Calculation
-K_vals, T_vals, delta_matrix, gamma_matrix, vega_matrix = sensitivity_analysis(S, r, sigma, option_type, strike_range, time_range)
-
-# Display Sensitivity Heatmaps
-with st.expander("Greeks Sensitivity Heatmap", expanded=True):
-    fig = go.Figure(data=go.Heatmap(z=delta_matrix, x=np.round(K_vals, 2), y=np.round(T_vals, 2), colorscale="YlGnBu", colorbar=dict(title="Delta")))
-    fig.update_layout(title="Delta Sensitivity Heatmap")
-    st.plotly_chart(fig, use_container_width=True)
-
-    fig = go.Figure(data=go.Heatmap(z=gamma_matrix, x=np.round(K_vals, 2), y=np.round(T_vals, 2), colorscale="YlGnBu", colorbar=dict(title="Gamma")))
-    fig.update_layout(title="Gamma Sensitivity Heatmap")
-    st.plotly_chart(fig, use_container_width=True)
-
-    fig = go.Figure(data=go.Heatmap(z=vega_matrix, x=np.round(K_vals, 2), y=np.round(T_vals, 2), colorscale="YlGnBu", colorbar=dict(title="Vega")))
-    fig.update_layout(title="Vega Sensitivity Heatmap")
-    st.plotly_chart(fig, use_container_width=True)
-
-# Portfolio Risk Calculation
-total_delta, total_gamma, var, cvar, monte_carlo_risk = portfolio_risk_metrics(portfolio, S, r, sigma, option_type)
-
-# Display Portfolio Risk Metrics
+# Portfolio Risk Metrics with Tooltips
 with st.expander("Portfolio Risk Metrics"):
+    st.write("""
+    Portfolio risk metrics help you assess the overall risk exposure of your options portfolio.
+    These metrics include:
+    - **Delta**: Measures how much the price of the option changes in response to changes in the stock price.
+    - **Gamma**: Measures the rate of change of Delta as the stock price changes.
+    - **VaR (Value-at-Risk)**: Estimates the potential loss in portfolio value under normal market conditions at a given confidence level.
+    - **CVaR (Conditional Value-at-Risk)**: Measures the expected loss assuming that the VaR threshold has been breached.
+    - **Monte Carlo Risk**: Simulates portfolio values based on random sampling to estimate the potential risk.
+
+    """)
+    total_delta, total_gamma, var, cvar, monte_carlo_risk = portfolio_risk_metrics(portfolio, S, r, sigma, option_type)
+    
     st.write(f"Portfolio Delta: {total_delta}")
     st.write(f"Portfolio Gamma: {total_gamma}")
     st.write(f"Value-at-Risk (VaR): {var}")
