@@ -83,6 +83,18 @@ with st.sidebar.expander("Stock Data Inputs", expanded=True):
     else:
         S = stock_info["Close"].iloc[-1]
         st.write(f"Real-Time Stock Price for {stock_symbol}: ${S:.2f}")
+        
+        # Add stock to portfolio functionality
+        if st.button("Add to Portfolio"):
+            # Store the selected stock in the portfolio
+            portfolio.append({
+                "stock_symbol": stock_symbol,
+                "stock_price": S,
+                "quantity": 1,  # Default quantity for simplicity
+                "strike": S,  # Default strike is the current stock price
+                "maturity": 1.0  # Default maturity is 1 year
+            })
+            st.success(f"{stock_symbol} has been added to your portfolio.")
 
 # Option Inputs
 with st.sidebar.expander("Option Inputs", expanded=True):
@@ -99,7 +111,7 @@ with st.sidebar.expander("Sensitivity Analysis Inputs", expanded=True):
 K_vals, T_vals, delta_matrix, gamma_matrix, vega_matrix = sensitivity_analysis(S, r, sigma, option_type, strike_range, time_range)
 
 # Display Sensitivity Heatmaps
-with st.expander("Greeks Sensitivity Heatmap"):
+with st.expander("Greeks Sensitivity Heatmap", expanded=True):
     fig = go.Figure(data=go.Heatmap(z=delta_matrix, x=np.round(K_vals, 2), y=np.round(T_vals, 2), colorscale="YlGnBu", colorbar=dict(title="Delta")))
     fig.update_layout(title="Delta Sensitivity Heatmap")
     st.plotly_chart(fig, use_container_width=True)
@@ -114,7 +126,7 @@ with st.expander("Greeks Sensitivity Heatmap"):
 
 # Portfolio Inputs
 with st.sidebar.expander("Portfolio Inputs", expanded=True):
-    options = []
+    options = portfolio = []
     num_options = st.number_input("Number of Options in Portfolio", min_value=1, max_value=10, value=1, help="Specify how many options you want to include in your portfolio.")
 
     for i in range(num_options):
