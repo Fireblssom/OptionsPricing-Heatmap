@@ -4,6 +4,9 @@ import plotly.graph_objects as go
 import yfinance as yf
 from scipy.stats import norm
 
+# Initialize portfolio list
+portfolio = []
+
 # Helper functions for Greeks and pricing
 def black_scholes(S, K, T, r, sigma, option_type="call"):
     if T == 0:
@@ -126,9 +129,9 @@ with st.expander("Greeks Sensitivity Heatmap", expanded=True):
 
 # Portfolio Inputs
 with st.sidebar.expander("Portfolio Inputs", expanded=True):
-    options = portfolio = []
     num_options = st.number_input("Number of Options in Portfolio", min_value=1, max_value=10, value=1, help="Specify how many options you want to include in your portfolio.")
-
+    options = []  # Initialize the options list again inside the Portfolio Inputs expander
+    
     for i in range(num_options):
         with st.sidebar.expander(f"Option {i+1} Details", expanded=True):
             quantity = st.number_input(f"Quantity of Option {i+1}", value=1, help="Number of contracts for this option.")
